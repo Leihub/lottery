@@ -33,7 +33,7 @@ Lottery.prototype = {
     drawMask: function () {
         this.resizeCanvas(this.mask, this.width, this.height)
         if (this.coverType == "color") {
-            this.maskCtx.fillStyle = "this.cover"
+            this.maskCtx.fillStyle = this.cover
             this.maskCtx.fillRect(0, 0, this.width, this.height)
             // 透明填充
             this.maskCtx.globalCompositeOperation = 'destination-out'
@@ -92,6 +92,39 @@ Lottery.prototype = {
             this.backCtx.restore()
         }
     },
+    drawPoint: function (x, y) {
+        this.maskCtx.beginPath()
+        var gradient = this.maskCtx.createRadialGradient(x, y, 0, x, y, 30);
+        gradient.addColorStop(0, 'rgba(0,0,0,0.6)');
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        this.maskCtx.fillStyle = gradient;
+        this.maskCtx.arc(x, y, 30, 0, Math.PI * 2, true);
+        this.maskCtx.fill()
+        // console.log(this.getTransparentPercent(this.maskCtx, this.width, this.height))
+        var a = this.getTransparentPercent(this.maskCtx, this.width, this.height)
+
+        //当区域大于80 就提示中奖，清空cover
+        if(a >80){
+             alert("中奖")
+            this.maskCtx.clearRect(0,0,this.width,this.height)
+        }
+
+        if (this.drawPercentCallback) {
+            this.drawPercentCallback.call(null, this.getTransparentPercent(this.maskCtx, this.width, this.height));
+        }
+    },
+    getTransparentPercent: function (ctx, width, height) {
+        var imgData = ctx.getImageData(0, 0, width, height)
+        var pixles = imgData.data
+        var transpixles = []
+        for (var i = 0; i < pixles.length; i += 4) {
+            var a = pixles[i + 3]
+            if (a < 128) {
+                transpixles.push(i)
+            }
+        }
+        return (transpixles.length / (pixles.length / 4) * 100).toFixed(2)
+    },
     bindEvent: function () {
         var _this = this
         var device = (/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(navigator.userAgent.toLowerCase()))
@@ -108,11 +141,42 @@ Lottery.prototype = {
                     e.preventDefault()
                 }
             }, false)
-            document.addEventListener("touched",function(e){
-                isMouseDown= false
-            },false)
+            document.addEventListener("touched", function (e) {
+                isMouseDown = false
+            }, false)
         }
-    }
 
-
+        this.mask.addEventListener(clickEvtName, function (e) {
+            isMouseDown = true
+            var doEle = document.documentElement
+            if (!_this.clientRect) {
+                _this.clientRect = {
+                    top: 0,
+                    left: 0,
+                }
+            }
+            var x = (device ? e.touches[0].clientX : e.clientX) - _this.clientRect.left + doEle.scrollLeft - doEle.clientLeft
+            var y = (device ? e.touches[0].clientY : e.clientY) - _this.clientRect.top + doEle.scrollTop - doEle.clientTop
+            _this.drawPoint(x, y)
+        }, false)
+        this.mask.addEventListener(moveEvtName, function (e) {
+            if (!device && !isMouseDown)
+                return false
+            var doEle = document.documentElement
+            if (!_this.clientRect) {
+                _this.clientRect = {
+                    top: 0,
+                    left: 0,
+                }
+            }
+            var x = (device ? e.touches[0].clientX : e.clientX) - _this.clientRect.left + doEle.scrollLeft - doEle.clientLeft
+            var y = (device ? e.touches[0].clientY : e.clientY) - _this.clientRect.top + doEle.scrollTop - doEle.clientTop
+            _this.drawPoint(x, y)
+        }, false)
+    },
+    init: function (lottery, lotteryType) {
+        this.lottery = lottery
+        lottery.lotteryType = lotteryType || 'image'
+        this.drawLottery()
+    },
 }
