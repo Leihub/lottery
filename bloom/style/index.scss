@@ -1,0 +1,19 @@
+.margy{
+    display:flex;
+    flex-direction:column;
+}
+@media only screen and (min-width:500px){
+    .margy{
+        flex-direction: row
+    }
+}
+.coulnm{
+    display: flex;
+    flex-direction: column wrap;
+    width: 100%
+}
+@media only screen and (min-width:500px){
+    .coulnm{
+         width: calc(100%/5);
+    }
+}
