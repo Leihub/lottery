@@ -53,3 +53,4 @@ mlazy.prototype.getNode = function () {
         imglist.push(nodes[i])
     }
 }
+//git 练习分支合并
